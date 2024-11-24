@@ -1,0 +1,30 @@
+# =====================================================
+# Docker Compose para UDCito - Con datos locales
+# =====================================================
+
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: udcito-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app:ro          # Código de la aplicación
+      - ./data:/app/data           # Directorio de datos local
+      - ./.env:/app/.env:ro        # Configuración
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    networks:
+      - udcito-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  udcito-net:
+    driver: bridge

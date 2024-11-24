@@ -1,0 +1,43 @@
+# =====================================================
+# .dockerignore para UDCito
+# Archivos y directorios que no deben incluirse en la imagen
+# =====================================================
+
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de desarrollo
+.git/
+.gitignore
+README.md
+*.log
+
+# Directorios de tests
+tests/
+test/
+
+# Archivos de Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentación y otros
+docs/
+*.md
+LICENSE
+
+# Archivos temporales
+*.swp
+*.swo
+*~

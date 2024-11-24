@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches
+*.cache
+*.log
+*.pytest_cache/
+*.coverage
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+
+# Environment variables
+.env
+*.env
+
+# Python-specific files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+
+# Pytest
+.pytest_cache/
+
+# FastAPI auto-generated files
+openapi.json
+
+# Docker
+*.dockerignore
+docker-compose*.yml
+docker-compose*.override.yml
+Dockerfile
+*.tar
+
+# Static files (if generated)
+static/
+
+# Logs
+*.log
+
+# Migrations (Django or similar, if applicable)
+migrations/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# SQLite databases
+*.sqlite3
+*.db
+
+# Testing output
+.coverage
+.tox/
+nosetests.xml
+test_*.xml
+htmlcov/
+
+# Cache and build files
+build/
+dist/
+*.egg-info/
+.eggs/
+*.whl
+
+# Node modules (if applicable)
+no
+requirements.old.txt
+app/config .old
+data/chroma/6d1bc6e6-d8f6-471a-93df-bc983c0af90d/data_level0.bin
+data/chroma/6d1bc6e6-d8f6-471a-93df-bc983c0af90d/header.bin
+data/chroma/6d1bc6e6-d8f6-471a-93df-bc983c0af90d/length.bin
+data/chroma/6d1bc6e6-d8f6-471a-93df-bc983c0af90d/link_lists.bin
