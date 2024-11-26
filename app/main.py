@@ -5,7 +5,7 @@ FastAPI Main Application - UDCito
 Este es el archivo principal de la API del Asistente Virtual de la Universidad del Chubut.
 Maneja todas las rutas, la configuración de la API y la integración de los diferentes componentes.
 
-Autor: [Tu Nombre]
+Autor: Jose Lacunza
 Fecha: Noviembre 2024
 Versión: 1.0.0
 """
@@ -217,7 +217,7 @@ async def consultar(request: ChatRequest):
     try:
         # Recuperar documentos relevantes
         contexto = recuperar_documentos(request.question)
-        
+        print(contexto)   
         # Consultar al LLM
         respuesta = consultar_llm(
             contexto, 

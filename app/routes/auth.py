@@ -5,7 +5,7 @@ Rutas de Autenticación - UDCito API
 Endpoints relacionados con autenticación y gestión de usuarios.
 Maneja el flujo de autenticación con Google OAuth y gestión de sesiones.
 
-Autor: [Tu Nombre]
+Autor: Jose Lacunza Kobs
 Fecha: Noviembre 2024
 """
 
