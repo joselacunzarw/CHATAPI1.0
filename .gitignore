@@ -38,7 +38,7 @@ openapi.json
 *.dockerignore
 docker-compose*.yml
 docker-compose*.override.yml
-Dockerfile
+#Dockerfile
 *.tar
 
 # Static files (if generated)
