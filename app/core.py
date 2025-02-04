@@ -3,15 +3,19 @@ Core.py - Módulo Principal del Asistente UDCito
 ==============================================
 
 Este módulo implementa la funcionalidad central del asistente virtual de la Universidad del Chubut.
-Maneja la carga de configuración, la conexión con OpenAI, y la lógica de consultas.
+Maneja la carga de configuración, la conexión con OpenAI y la lógica de consultas.
 
-Componentes principales:
-1. Gestión de variables de entorno
-2. Inicialización de servicios (embeddings, base de datos, LLM)
-3. Funciones de consulta y recuperación de documentos
+Mejoras implementadas:
+✅ Uso del historial en la consulta de recuperación.
+✅ Reformulación de preguntas para mejorar el contexto.
+✅ Reordenamiento de documentos recuperados (Reranking).
+✅ Búsqueda híbrida (Embeddings + Texto).
+✅ Preparación para MultiQuery Retriever (sin implementarlo todavía).
+
+Cada una de estas mejoras puede ser comentada si no deseas usarla, sin afectar el resto del código.
 
 Autor: Jose Lacunza Kobs
-Fecha: Noviembre 2024
+Fecha: Enero 2025
 """
 
 import os
@@ -21,6 +25,7 @@ from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
+from langchain.retrievers.multi_query import MultiQueryRetriever
 
 # =====================================
 # Configuración inicial de logging
@@ -199,8 +204,10 @@ def consultar_llm(context_docs: list, question: str, history: list) -> str:
         # Crear mensaje del sistema con instrucciones
         system_message = SystemMessage(
             content=(
-                "Eres UDCito un asistente de la Universidad del Chubut. "
-                "Responde usando solo la información del siguiente contexto. "
+                "Eres un Chatbot asistente de la Universidad del Chubut. "
+                "Responde usando solo la información del siguiente contexto, teniendo en cuenta tambien el historial de conversacion. "
+                "Usa un tono formal y profesional. "
+                "No inventes información y responde solo con datos verificados. "
                 "Si la información no es suficiente, indícalo. "
                 f"Contexto: {context}"
             )
@@ -233,3 +240,134 @@ def consultar_llm(context_docs: list, question: str, history: list) -> str:
 # =====================================
 if not test_openai_connection():
     raise ConnectionError("❌ No se pudo establecer conexión con OpenAI")
+
+
+
+
+# ==========================================
+# FUNCIONES AUXILIARES PARA MEJORAS
+# ==========================================
+
+def reformular_pregunta(history: list, question: str) -> str:
+    """Reformula la pregunta para hacerla más clara y con contexto."""
+    try:
+        reformulacion = llm.invoke(input=[
+            SystemMessage(content="Reformula la pregunta del humano teniendo en cuenta el contexto y el historial, tu respuesta se utilizara para recuperar informacion de la base vectorial y contestar la pregunta del humano."),
+            HumanMessage(content=f"Historial: {history[-3:]}"),
+            HumanMessage(content=f"Pregunta: {question}")
+        ])
+        logger.info("✅ Reformulación recibida")
+        logger.info(f"🔄 Reformulación: {reformulacion.content}")
+
+        return reformulacion.content
+    except Exception as e:
+        logger.error(f"❌ Error en reformulación: {str(e)}")
+        return question  # Devuelve la original si falla
+
+def reordenar_documentos(query: str, documentos: list) -> list:
+    """Reordena los documentos recuperados según su relevancia."""
+    try:
+        documentos_rankeados = sorted(
+            documentos,
+            key=lambda doc: llm.invoke(input=[
+                SystemMessage(content="Evalúa la relevancia del documento."),
+                HumanMessage(content=f"Consulta: {query}"),
+                HumanMessage(content=f"Documento: {doc.page_content}")
+            ]).content,
+            reverse=True
+        )
+        return documentos_rankeados
+    except Exception as e:
+        logger.error(f"❌ Error en reordenamiento: {str(e)}")
+        return documentos  # Devuelve los documentos en su orden original
+
+def recuperar_documentos_hibrido(query: str, history: list) -> list:
+    """Usa búsqueda híbrida (Embeddings + Texto completo) para mejorar la recuperación."""
+    try:
+        # ✅ Convertir `history` en una lista de strings
+        historial_completo = " ".join([msg.content for msg in history[-3:]]) if history else ""
+
+        # ✅ Enriquecer la consulta con historial (si hay)
+        consulta_enriquecida = f"{historial_completo} {query}".strip()
+
+        # Recuperación semántica (Embeddings)
+        documentos_semanticos = retriever.invoke(input=consulta_enriquecida)
+
+        # Recuperación por palabras clave (Texto completo)
+        documentos_texto = db.similarity_search(consulta_enriquecida, k=5)
+
+        # ✅ Solución: Usar un diccionario para eliminar duplicados
+        documentos_unicos = {doc.page_content: doc for doc in documentos_semanticos + documentos_texto}.values()
+
+        return list(documentos_unicos)
+    except Exception as e:
+        logger.error(f"❌ Error en recuperación híbrida: {str(e)}")
+        return []
+
+
+# ==========================================
+# FUNCIÓN PRINCIPAL DE RECUPERACIÓN DE DOCUMENTOS
+# ==========================================
+
+def recuperar_documentos(query: str, history: list) -> list:
+    """
+    Recupera documentos relevantes basándose en la consulta y el historial.
+    
+    Incorpora mejoras opcionales que pueden comentarse según necesidad.
+    """
+    try:
+        # 1️⃣ Reformulación de la pregunta (Opcional)
+        query = reformular_pregunta(history, query)  # 💬 Comentar para desactivar
+
+        # 2️⃣ Recuperación de documentos con búsqueda híbrida (Opcional)
+
+        documentos = recuperar_documentos_multiquery(query, history)  # 🔍 Comentar para usar embbedings
+        #documentos = recuperar_documentos_hibrido(query, history)  # 🔍 Comentar para usar solo embeddings
+
+        # 3️⃣ Reordenamiento de documentos (Opcional)
+       # documentos = reordenar_documentos(query, documentos)  # 📄 Comentar si no quieres usar reranking
+
+        return documentos
+    except Exception as e:
+        logger.error(f"❌ Error en recuperación de documentos: {str(e)}")
+        return []
+
+# ==========================================
+# PREPARACIÓN PARA MULTIQUERY RETRIEVER
+# ==========================================
+
+def recuperar_documentos_multiquery(query: str, history: list) -> list:
+    """
+    📌 Recupera documentos usando `MultiQuery Retriever`.
+
+    🛠️ ¿Cómo funciona?
+    1️⃣ Usa un modelo LLM para generar varias versiones de la consulta original.
+    2️⃣ Ejecuta cada consulta reformulada en la base de datos vectorial.
+    3️⃣ Fusiona los resultados y elimina duplicados.
+
+    Args:
+        query (str): Pregunta original del usuario.
+        history (list): Historial de conversación (no se usa en esta versión, pero puede usarse en el futuro).
+
+    Returns:
+        list: Lista de documentos únicos encontrados.
+    """
+    try:
+        # ✅ Configuramos el retriever MultiQuery con el modelo de lenguaje
+        multiquery_retriever = MultiQueryRetriever.from_llm(
+            retriever=retriever,  # 🔍 Base de datos vectorial
+            llm=llm,  # 🧠 Modelo de lenguaje para generar consultas múltiples
+            include_original=True  # ✅ Incluir la consulta original en la búsqueda
+        )
+
+        # ✅ Ejecutamos la recuperación con múltiples consultas generadas
+        documentos_multiquery = multiquery_retriever.get_relevant_documents(query)
+
+        # ✅ Eliminamos duplicados usando `page_content` como clave
+        documentos_unicos = {doc.page_content: doc for doc in documentos_multiquery}.values()
+
+        return list(documentos_unicos)
+
+    except Exception as e:
+        logger.error(f"❌ Error en recuperación MultiQuery: {str(e)}")
+        return []

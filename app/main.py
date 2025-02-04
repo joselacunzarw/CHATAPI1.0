@@ -216,7 +216,7 @@ async def consultar(request: ChatRequest):
 
     try:
         # Recuperar documentos relevantes
-        contexto = recuperar_documentos(request.question)
+        contexto = recuperar_documentos(request.question, request.history)
         print(contexto)   
         # Consultar al LLM
         respuesta = consultar_llm(
